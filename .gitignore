@@ -53,3 +53,9 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Generated kernel-type header (produced by `bpftool btf dump …`)
+ebpf/vmlinux.h
+
+# Userspace binary produced by `make`
+tcp_tracer
