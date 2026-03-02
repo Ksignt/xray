@@ -55,3 +55,42 @@ go build ./...
 ```
 
 See `config.template.yaml` for the configuration format.
+
+Building and running (BPF + userspace)
+
+When working with the eBPF + userspace components you must compile the userspace C helpers, build the eBPF object, then build the Go binary. Example commands (run from repository root):
+
+1) Compile the userspace tracer helper into an object and archive it into a static library:
+
+```bash
+# compile the userspace helper (from repo root)
+gcc -c tracer/tcp_to_pid_user.c -o tcp_to_pid_user.o
+# create a static archive library
+ar rcs libtcp_to_pid_user.a tcp_to_pid_user.o
+```
+
+2) Build the eBPF object for your target architecture. You must define the target architecture (for example `arm64`) when compiling the BPF program. Example for ARM64:
+
+```bash
+# compile the BPF program (set -D__TARGET_ARCH_<arch> as needed)
+clang -O2 -g -target bpf -D__TARGET_ARCH_arm64 -c tracer/tcp_to_pid.bpf.c -o tracer/tcp_to_pid.bpf.o
+```
+
+Replace `arm64` above with your architecture where appropriate (for example `x86_64` might use `-D__TARGET_ARCH_x86`).
+
+3) Build the Go binary (from repository root):
+
+```bash
+go build -o trace-graph-engine .
+```
+
+4) Run the binary (ensure you run with appropriate privileges if loading BPF programs is required):
+
+```bash
+sudo ./trace-graph-engine
+```
+
+Notes:
+- The BPF object file `tracer/tcp_to_pid.bpf.o` must be accessible relative to the process working directory; the default paths the userspace loader tries include `tracer/tcp_to_pid.bpf.o` and `./tracer/tcp_to_pid.bpf.o`.
+- If you change the working directory from the repo root, adjust paths or rebuild accordingly.
+- Building and loading eBPF programs requires appropriate kernel headers and clang/llvm toolchain configured for BPF cross-compilation.
