@@ -5,6 +5,7 @@
 #include <bpf/bpf.h>
 #include <stdint.h>
 #include "event.h"
+#include "tcp_to_pid_user.h"
 
 static volatile sig_atomic_t stop;
 
@@ -25,7 +26,7 @@ int handle_event(void *ctx, void *data, size_t data_sz)
     return 0;
 }
 
-int main()
+int load_tcp_recv_listener(int target_pid)
 {
     struct bpf_object *obj;
     struct bpf_program *prog;
@@ -33,11 +34,9 @@ int main()
     struct ring_buffer *rb = NULL;
     int err;
 
-    int target_pid = 72134;
-
     signal(SIGINT, handle_signal);
 
-    obj = bpf_object__open_file("tcp_to_pid.bpf.o", NULL);
+    obj = bpf_object__open_file("./tracer/tcp_to_pid.bpf.o", NULL);
     if (!obj)
     {
         fprintf(stderr, "Failed to open BPF object file\n");
