@@ -34,6 +34,8 @@ int load_tcp_recv_listener(int target_pid)
     struct ring_buffer *rb = NULL;
     int err;
 
+    int target_pid = 72134;
+
     signal(SIGINT, handle_signal);
 
     obj = bpf_object__open_file("./tracer/tcp_to_pid.bpf.o", NULL);
