@@ -77,3 +77,4 @@ vmlinux.h
 # Compiled BPF userspace binaries (no extension)
 slave/tcp_to_pid_user
 tracer/tcp_to_pid_user
+trace-graph-engine
