@@ -1,0 +1,3 @@
+# Path to the binary whose PID should be resolved.
+# Must be an absolute path matching the running process's command line.
+target_binary: /absolute/path/to/your/binary

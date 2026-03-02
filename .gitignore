@@ -57,6 +57,10 @@ dkms.conf
 # Mock
 mock/
 
+
+# Local config (use config.template.yaml as the base)
+/config.yaml
+
 # Node
 node_modules/
 package-lock.json
