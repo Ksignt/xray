@@ -1,8 +1,8 @@
-package main
+package reader
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -14,7 +14,7 @@ type Config struct {
 	TargetBinary string `yaml:"target_binary"`
 }
 
-func getPidForBinary(binaryPath string) (int, error) {
+func GetPidForBinary(binaryPath string) (int, error) {
 	procs, err := process.Processes()
 	if err != nil {
 		return 0, fmt.Errorf("failed to list processes: %v", err)
@@ -52,11 +52,11 @@ func getPidForBinary(binaryPath string) (int, error) {
 	return pids[0], nil
 }
 
-func main() {
-	data, err := ioutil.ReadFile("../config.yaml")
+func GetConfig(configPath string) Config {
+	data, err := os.ReadFile(configPath)
 	if err != nil {
 		fmt.Printf("Error reading config file: %v\n", err)
-		return
+		return Config{}
 	}
 
 	var config Config
@@ -65,10 +65,19 @@ func main() {
 		panic(fmt.Sprintf("Error parsing config file: %v", err))
 	}
 
-	fmt.Printf("Target Binary: %s\n", config.TargetBinary)
-	pid, err := getPidForBinary(config.TargetBinary)
-	if err != nil {
-		panic(fmt.Sprintf("Error finding PID for binary: %v", err))
+	return config
+
+	// fmt.Printf("Target Binary: %s\n", config.TargetBinary)
+	// pid, err := getPidForBinary(config.TargetBinary)
+	// if err != nil {
+	// 	panic(fmt.Sprintf("Error finding PID for binary: %v", err))
+	// }
+	// fmt.Printf("PID: %d\n", pid)
+}
+
+func GetTargetBinary(config Config) (string, error) {
+	if config.TargetBinary == "" {
+		return "", fmt.Errorf("no target binary specified in config")
 	}
-	fmt.Printf("PID: %d\n", pid)
+	return config.TargetBinary, nil
 }
