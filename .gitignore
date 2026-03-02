@@ -53,3 +53,27 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Mock
+mock/
+
+
+# Local config (use config.template.yaml as the base)
+/config.yaml
+
+# Node
+node_modules/
+package-lock.json
+
+# Java compiled
+*.class
+
+# Go binaries
+configReader/reader
+
+# Generated / large headers
+vmlinux.h
+
+# Compiled BPF userspace binaries (no extension)
+slave/tcp_to_pid_user
+tracer/tcp_to_pid_user
