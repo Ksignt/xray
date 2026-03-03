@@ -51,6 +51,7 @@ int BPF_KPROBE(handle_tcp_recvmsg, struct sock *sk, struct msghdr *msg, size_t s
         return 0;
     }
 
+    // TODO: use actual oid instead of tgid as the log pid
     e->pid = pid;
     bpf_get_current_comm(&e->comm, sizeof(e->comm));
     e->size = size;

@@ -18,6 +18,7 @@ int handle_event(void *ctx, void *data, size_t data_sz)
 {
     struct event *e = data;
 
+    // Use the logging mechanism here
     printf("PID=%u COMM=%s size=%lu\n",
            e->pid,
            e->comm,
