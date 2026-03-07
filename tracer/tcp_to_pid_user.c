@@ -2,6 +2,10 @@
 #include <signal.h>
 #include <unistd.h>
 #include <bpf/libbpf.h>
+#include <bpf/bpf.h>
+#include <stdint.h>
+#include "event.h"
+#include "tcp_to_pid_user.h"
 
 static volatile sig_atomic_t stop;
 
@@ -10,16 +14,30 @@ void handle_signal(int sig)
     stop = 1;
 }
 
-int main()
+int handle_event(void *ctx, void *data, size_t data_sz)
+{
+    struct event *e = data;
+
+    // Use the logging mechanism here
+    printf("PID=%u COMM=%s size=%lu\n",
+           e->pid,
+           e->comm,
+           e->size);
+
+    return 0;
+}
+
+int load_tcp_recv_listener(int target_pid)
 {
     struct bpf_object *obj;
     struct bpf_program *prog;
     struct bpf_link *link = NULL;
+    struct ring_buffer *rb = NULL;
     int err;
 
     signal(SIGINT, handle_signal);
 
-    obj = bpf_object__open_file("tcp_to_pid.bpf.o", NULL);
+    obj = bpf_object__open_file("./tracer/tcp_to_pid.bpf.o", NULL);
     if (!obj)
     {
         fprintf(stderr, "Failed to open BPF object file\n");
@@ -29,6 +47,20 @@ int main()
     if (err)
     {
         fprintf(stderr, "Failed to load BPF object: %d\n", err);
+        return 1;
+    }
+
+    int map_fd = bpf_object__find_map_fd_by_name(obj, "target_pid_map");
+    if (map_fd < 0)
+    {
+        printf("Failed to find map\n");
+        return 1;
+    }
+
+    uint32_t key = 0;
+    if (bpf_map_update_elem(map_fd, &key, &target_pid, BPF_ANY) != 0)
+    {
+        printf("Failed to update map\n");
         return 1;
     }
 
@@ -45,10 +77,25 @@ int main()
         return 1;
     }
 
+    int rb_map_fd = bpf_object__find_map_fd_by_name(obj, "tcp_events");
+    if (rb_map_fd < 0)
+    {
+        printf("Failed to find tcp_events map\n");
+        return 1;
+    }
+
+    rb = ring_buffer__new(rb_map_fd, handle_event, NULL, NULL);
+    if (!rb)
+    {
+        printf("Failed to create ring buffer\n");
+        return 1;
+    }
+
     printf("Listening on tcp_recvmsg... Press Ctrl+C to stop.\n");
+
     while (!stop)
     {
-        sleep(1);
+        ring_buffer__poll(rb, 100);
     }
 
     bpf_link__destroy(link);
