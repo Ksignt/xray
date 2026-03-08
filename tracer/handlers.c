@@ -26,7 +26,7 @@ int handle_event(void *ctx, void *data, size_t data_sz)
     return 0;
 }
 
-int handle_sched_event(void *ctx, void *data, size_t data_sz)
+int handle_sched_wakeup_event(void *ctx, void *data, size_t data_sz)
 {
     struct sched_wakeup_event *e = data;
     if (!e) return 0;
@@ -34,6 +34,22 @@ int handle_sched_event(void *ctx, void *data, size_t data_sz)
     if (!f) return 0;
 
     fprintf(f, "SCHED_WAKEUP: PID=%d COMM=%s prio=%d cpu=%d\n",
+            e->pid,
+            e->comm,
+            e->prio,
+            e->target_cpu);
+    fflush(f);
+    return 0;
+}
+
+int handle_sched_wakeup_new_event(void *ctx, void *data, size_t data_sz)
+{
+    struct sched_wakeup_new_event *e = data;
+    if (!e) return 0;
+    FILE *f = get_log_file();
+    if (!f) return 0;
+
+    fprintf(f, "SCHED_WAKEUP_NEW: PID=%d COMM=%s prio=%d cpu=%d\n",
             e->pid,
             e->comm,
             e->prio,

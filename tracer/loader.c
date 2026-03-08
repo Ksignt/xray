@@ -28,30 +28,77 @@ int load_probes(int target_pid)
     signal(SIGINT, handle_signal);
 
     struct bpf_object *tcp_to_pid_obj = load_and_get_bpf_obj("./tracer/tcp_to_pid/tcp_to_pid.bpf.o");
-    if (success_bpf_obj_count >= BPF_PROG_MAX_SIZE) { fprintf(stderr, "Too many BPF objects\n"); exit(1); }
+    if (success_bpf_obj_count >= BPF_PROG_MAX_SIZE)
+    {
+        fprintf(stderr, "Too many BPF objects\n");
+        exit(1);
+    }
     objs[success_bpf_obj_count++] = tcp_to_pid_obj;
 
     struct bpf_object *sched_wake_up_obj = open_bpf_obj("./tracer/sched_wakeup/prob.bpf.o");
-    if (success_bpf_obj_count >= BPF_PROG_MAX_SIZE) { fprintf(stderr, "Too many BPF objects\n"); exit(1); }
+    if (success_bpf_obj_count >= BPF_PROG_MAX_SIZE)
+    {
+        fprintf(stderr, "Too many BPF objects\n");
+        exit(1);
+    }
     objs[success_bpf_obj_count++] = sched_wake_up_obj;
+
+    struct bpf_object *sched_wake_up_new_obj = open_bpf_obj("./tracer/sched_wakeup_new/prob.bpf.o");
+    if (success_bpf_obj_count >= BPF_PROG_MAX_SIZE)
+    {
+        fprintf(stderr, "Too many BPF objects\n");
+        exit(1);
+    }
+    objs[success_bpf_obj_count++] = sched_wake_up_new_obj;
 
     reuse_map_and_update(objs[0], "target_pid_map", &objs[1], success_bpf_obj_count - 1, 0, (uint32_t)target_pid);
 
     load_bpf_obj(sched_wake_up_obj);
+    load_bpf_obj(sched_wake_up_new_obj);
 
     struct bpf_link *tcp_to_pid_link = get_bpf_link(tcp_to_pid_obj, "handle_tcp_recvmsg");
-    if (success_bpf_link_count >= BPF_PROG_MAX_SIZE) { fprintf(stderr, "Too many BPF links\n"); exit(1); }
+    if (success_bpf_link_count >= BPF_PROG_MAX_SIZE)
+    {
+        fprintf(stderr, "Too many BPF links\n");
+        exit(1);
+    }
     links[success_bpf_link_count++] = tcp_to_pid_link;
     struct bpf_link *sched_wakeup_link = get_bpf_link(sched_wake_up_obj, "handle_sched_wakeup");
-    if (success_bpf_link_count >= BPF_PROG_MAX_SIZE) { fprintf(stderr, "Too many BPF links\n"); exit(1); }
+    if (success_bpf_link_count >= BPF_PROG_MAX_SIZE)
+    {
+        fprintf(stderr, "Too many BPF links\n");
+        exit(1);
+    }
     links[success_bpf_link_count++] = sched_wakeup_link;
+    struct bpf_link *sched_wakeup_new_link = get_bpf_link(sched_wake_up_new_obj, "handle_sched_wakeup_new");
+    if (success_bpf_link_count >= BPF_PROG_MAX_SIZE)
+    {
+        fprintf(stderr, "Too many BPF links\n");
+        exit(1);
+    }
+    links[success_bpf_link_count++] = sched_wakeup_new_link;
 
     struct ring_buffer *tcp_to_pid_rb = get_ring_buffer_from_map_fd(tcp_to_pid_obj, "tcp_events", handle_event);
-    if (success_rb_count >= BPF_PROG_MAX_SIZE) { fprintf(stderr, "Too many ring buffers\n"); exit(1); }
+    if (success_rb_count >= BPF_PROG_MAX_SIZE)
+    {
+        fprintf(stderr, "Too many ring buffers\n");
+        exit(1);
+    }
     rbs[success_rb_count++] = tcp_to_pid_rb;
-    struct ring_buffer *sched_wake_up_rb = get_ring_buffer_from_map_fd(sched_wake_up_obj, "sched_wakeup_events", handle_sched_event);
-    if (success_rb_count >= BPF_PROG_MAX_SIZE) { fprintf(stderr, "Too many ring buffers\n"); exit(1); }
+    struct ring_buffer *sched_wake_up_rb = get_ring_buffer_from_map_fd(sched_wake_up_obj, "sched_wakeup_events", handle_sched_wakeup_event);
+    if (success_rb_count >= BPF_PROG_MAX_SIZE)
+    {
+        fprintf(stderr, "Too many ring buffers\n");
+        exit(1);
+    }
     rbs[success_rb_count++] = sched_wake_up_rb;
+    struct ring_buffer *sched_wake_up_new_rb = get_ring_buffer_from_map_fd(sched_wake_up_new_obj, "sched_wakeup_new_events", handle_sched_wakeup_new_event);
+    if (success_rb_count >= BPF_PROG_MAX_SIZE)
+    {
+        fprintf(stderr, "Too many ring buffers\n");
+        exit(1);
+    }
+    rbs[success_rb_count++] = sched_wake_up_new_rb;
 
     printf("Listening on tcp_recvmsg... Press Ctrl+C to stop.\n");
 
@@ -59,6 +106,7 @@ int load_probes(int target_pid)
     {
         ring_buffer__poll(tcp_to_pid_rb, 100);
         ring_buffer__poll(sched_wake_up_rb, 100);
+        ring_buffer__poll(sched_wake_up_new_rb, 100);
     }
 
     return 0;
