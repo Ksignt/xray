@@ -1,9 +1,11 @@
 package agent
 
 /*
-#cgo CFLAGS: -I../tracer
-#cgo LDFLAGS: -L../tracer -ltcp_to_pid_user -lbpf
-#include "../tracer/tcp_to_pid_user.h"
+#cgo CFLAGS: -I../tracer -I../tracer/utils
+#cgo LDFLAGS: -lbpf -lelf -lz
+#include "../tracer/utils/loader.c"
+#include "../tracer/handlers.c"
+#include "../tracer/loader.c"
 */
 import "C"
 
@@ -26,15 +28,13 @@ func Run() {
 	if err != nil {
 		panic(fmt.Sprintf("Error getting PID for target binary: %v", err))
 	}
-	fmt.Printf("Attaching Listners...\n")
-
-	fmt.Printf("Attaching tcp_recvmsg Listner\n")
-	load_tcp_recvmsg_status := C.load_tcp_recv_listener(C.int(pid))
 	fmt.Printf("PID: %d\n", pid)
+	fmt.Printf("Attaching probes...\n")
 
-	if load_tcp_recvmsg_status != 0 {
-		fmt.Printf("Failed to load tcp_recvmsg listener\n")
+	status := C.load_probes(C.int(pid))
+	if status != 0 {
+		fmt.Printf("Failed to load probes\n")
 	} else {
-		fmt.Printf("Successfully loaded tcp_recvmsg listener\n")
+		fmt.Printf("Probes exited cleanly\n")
 	}
 }
