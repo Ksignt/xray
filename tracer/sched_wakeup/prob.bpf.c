@@ -1,7 +1,7 @@
-#include "../vmlinux.h"
+#include "vmlinux.h"
 #include "bpf/bpf_helpers.h"
 #include <bpf/bpf_core_read.h>
-#include "../event.h"
+#include "event.h"
 
 char LICENSE[] SEC("license") = "GPL";
 
@@ -16,19 +16,36 @@ struct
 {
     __uint(type, BPF_MAP_TYPE_ARRAY);
     __uint(max_entries, 1);
-    __type(key, __u32);
-    __type(value, int);
+    __type(key, u32);
+    __type(value, u32);
 } target_pid_map SEC(".maps");
+
+#include "utils/kernel.h"
 
 SEC("tracepoint/sched/sched_wakeup")
 int handle_sched_wakeup(struct trace_event_raw_sched_wakeup_template *ctx)
 {
+    u32 *target_tid;
+
     struct sched_wakeup_event *e = bpf_ringbuf_reserve(&sched_wakeup_events, sizeof(*e), 0);
     if (!e)
         return 0;
 
-    e->pid        = BPF_CORE_READ(ctx, pid);
-    e->prio       = BPF_CORE_READ(ctx, prio);
+    target_tid = getTargetPid();
+    if (!target_tid)
+    {
+        bpf_ringbuf_discard(e, 0);
+        return 0;
+    }
+    u32 tid = getCurrentTid();
+    if (tid != *target_tid)
+    {
+        bpf_ringbuf_discard(e, 0);
+        return 0;
+    }
+
+    e->pid = tid;
+    e->prio = BPF_CORE_READ(ctx, prio);
     e->target_cpu = BPF_CORE_READ(ctx, target_cpu);
     BPF_CORE_READ_STR_INTO(&e->comm, ctx, comm);
 

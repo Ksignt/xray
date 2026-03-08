@@ -1,7 +1,3 @@
-#ifndef __TARGET_ARCH_x86_64
-#define __TARGET_ARCH_x86_64 1
-#endif
-
 #include "vmlinux.h"
 #include "bpf/bpf_helpers.h"
 #include "bpf/bpf_tracing.h"
@@ -18,14 +14,14 @@ struct
     __type(value, u32);
 } target_pid_map SEC(".maps");
 
-#include "utils/kernel.h"
-
 struct
 {
     __uint(type, BPF_MAP_TYPE_RINGBUF);
     __uint(max_entries, 1 << 24); // 16MB
 
 } tcp_events SEC(".maps");
+
+#include "utils/kernel.h"
 
 SEC("kprobe/tcp_recvmsg")
 int BPF_KPROBE(handle_tcp_recvmsg, struct sock *sk, struct msghdr *msg, size_t size, int flags, int *addr_len)
