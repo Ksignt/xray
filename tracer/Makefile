@@ -13,7 +13,8 @@ LDFLAGS    := -lbpf -lelf -lz
 # ── BPF object targets ────────────────────────────────────────────────────────
 BPF_TARGETS := \
 	tcp_to_pid/tcp_to_pid.bpf.o \
-	sched_wakeup/prob.bpf.o
+	sched_wakeup/prob.bpf.o \
+	sched_wakeup_new/prob.bpf.o
 
 # ── Userspace object targets ──────────────────────────────────────────────────
 US_OBJS := \
@@ -33,7 +34,10 @@ tcp_to_pid/tcp_to_pid.bpf.o: tcp_to_pid/tcp_to_pid.bpf.c
 
 # prob.bpf.c is the source; output as prob.bpf.o to match the name expected by loader.c
 sched_wakeup/prob.bpf.o: sched_wakeup/prob.bpf.c
-	$(CLANG) $(BPF_CFLAGS) -I.. -c $< -o $@
+	$(CLANG) $(BPF_CFLAGS) -c $< -o $@
+
+sched_wakeup_new/prob.bpf.o: sched_wakeup_new/prob.bpf.c
+	$(CLANG) $(BPF_CFLAGS) -c $< -o $@
 
 # Userspace objects
 userspace: $(US_OBJS)

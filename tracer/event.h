@@ -21,4 +21,12 @@ struct sched_wakeup_event
     char comm[16];
 };
 
+struct sched_wakeup_new_event
+{
+    uint32_t pid;
+    int prio;
+    int target_cpu;
+    char comm[16];
+};
+
 #endif
